@@ -49,20 +49,33 @@ function Greeting({ initialName = '' }) {
   //#endregion
   //* const [nameThree, setNameThree] = useLocalStorageState(initialName)
 
-  function useBetterLocalStorage(key, initialValue) {
-    const [name, setName] = React.useState(() => {
-      try {
-        const item = window.localStorage.getItem(key);
-        return item ? JSON.parse(item) : initialValue;
-      } catch (error) {
-        console.error(error);
-        return initialValue;
+  function useLocalStorageState(
+    key,
+    defaultValue = '',
+    { serialize = JSON.stringify, deserialize = JSON.parse } = {}
+  ) {
+    // initialize all of this in a useState callback function for better optimization
+    const [state, useState] = React.useState(() => {
+      const valueInLocalStorage = window.localStorage.getItem(key);
+      if (valueInLocalStorage) {
+        try {
+          return deserialize(valueInLocalStorage);
+        } catch (error) {
+          window.localStorage.removeItem(key);
+        }
       }
+      return typeof defaultValue === 'function' ? defaultValue() : defaultValue;
     });
+    //! keep track of the previous key in the event we want to change it
+    const prevKey = React.useRef(key);
     React.useEffect(() => {
-      window.localStorage.setItem(key, JSON.stringify(name));
-    });
-    return [name, setName];
+      if (prevKey !== key) {
+        window.localStorage.removeItem(key);
+      }
+      prevKey.current = key;
+      window.localStorage.setItem(key, serialize(state));
+    }, [key, serialize, state]);
+    return [state, setState];
   }
   const [nameFour, setNameFour] = useBetterLocalStorage('name', 'andrew');
   function handleChange(event) {
