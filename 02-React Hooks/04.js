@@ -1,24 +1,51 @@
 // useState: tic tac toe
 // http://localhost:3000/isolated/exercise/04.js
 
-import React from 'react'
+import React from 'react';
 
-function Board({squares, onClick}) {
+/**
+ *
+ * @param {string} winner
+ * @param {Object} squares
+ * @param {{serialize: Function, deserialize: Function}} options The serialize and deserialize functions to use (defaults to JSON.stringify and JSON.parse respectively)
+ */
+
+function useLocalStorageState(
+  key,
+  defaultValue = '',
+  { serialize = JSON.stringify, deserialize = JSON.parse } = {}
+) {
+  const [state, setState] = React.useState(() => {
+    const valueInLocalStorage = window.localStorage.getItem(key);
+    if (valueInLocalStorage) {
+      return deserialize(valueInLocalStorage);
+    }
+    return typeof defaultValue === 'function' ? defaultValue() : defaultValue;
+  });
+  const previousKeyRef = React.useRef(key);
+  React.useEffect(() => {
+    const previousKey = previousKeyRef.current;
+    if (previousKey !== key) {
+      // remove the old key
+      window.localStorage.removeItem(key);
+    }
+    previousKeyRef.current = key;
+    window.localStorage.setItem(key, serialize(state));
+  }, [key, defaultValue, state]);
+  return [state, setState];
+}
+
+function Board({ squares, onClick }) {
   function renderSquare(i) {
     return (
       <button className="square" onClick={() => onClick(i)}>
         {squares[i]}
       </button>
-    )
+    );
   }
-  // let's work on preserving our game in localStorage
-  React.useEffect(() => {
-    window.localStorage.setItem('squares', JSON.stringify(squares))
-  }, [squares])
+  // ui
   return (
     <div>
-      {/* 🐨 put the status here */}
-      <div className="status">STATUS:</div>
       <div className="board-row">
         {renderSquare(0)}
         {renderSquare(1)}
@@ -35,85 +62,79 @@ function Board({squares, onClick}) {
         {renderSquare(8)}
       </div>
     </div>
-  )
+  );
 }
 
 function Game() {
-  const [history, setHistory] = React.useState([{squares: Array(9).fill(null)}])
-  const [stepNumber, setStepNumber] = React.useState(0)
-  const [xIsNext, setXIsNext] = React.useState(true)
-  const [status, setStatus] = React.useState('')
-  const handleClick = i => {
-    const hist = history.slice(0, stepNumber + 1)
-    const current = hist[hist.length - 1]
-    const squares = current.squares.slice()
-    if (calculateWinner(squares) || squares[i]) {
-      return
-    }
-    squares[i] = xIsNext ? 'X' : 'O'
+  const [history, setHistory] = useLocalStorageState('tic-tac-toe:history', [
+    Array(9).fill(null),
+  ]);
+  const [currentStep, setCurrentStep] = useLocalStorageState(
+    'tic-tac-toe:step',
+    0
+  );
+  const currentSquares = history[currentStep];
+  const winner = calculateWinner(currentSquares);
+  const nextValue = calculateNextValue(currentSquares);
+  const status = calculateStatus(winner, currentSquares, nextValue);
 
-    setHistory(hist.concat([{squares}]))
-    setStepNumber(hist.length)
-    setXIsNext(!xIsNext)
+  function selectSquare(square) {
+    if (winner || currentSquares[square]) return;
+    const newHistory = history.slice(0, currentStep + 1);
+    const squares = [...currentSquares];
+    squares[square] = nextValue;
+    setHistory([...newHistory, squares]);
+    setCurrentStep(newHistory.length);
   }
 
-  const jumpTo = step => {
-    setStepNumber(step)
-    setXIsNext(step % 2 === 0)
-  }
+  // reset game
 
-  const moves = history.map((step, move) => {
-    const desc = move ? 'Go to move #' + move : 'Go to game start'
+  function restart() {
+    setHistory([Array(9).fill(null)]);
+    setCurrentStep(0);
+  }
+  const moves = history.map((stepSquares, step) => {
+    const desc = step ? `Go to move #${step}` : 'Go to game start';
+    const isCurrentStep = step === currentStep;
     return (
-      <li key={move}>
-        <button onClick={() => jumpTo(move)}>{desc}</button>
+      <li key={step}>
+        <button disabled={isCurrentStep} onClick={() => setCurrentStep(step)}>
+          {desc} {isCurrentStep ? '(current)' : null}
+        </button>
       </li>
-    )
-  })
-
-  let current = history[stepNumber]
-  let winner = 0
-  React.useEffect(() => {
-    current = history[stepNumber]
-    winner = calculateWinner(current.squares)
-
-    if (winner) {
-      setStatus('Winner: ' + winner)
-    } else {
-      setStatus('Next player: ' + (xIsNext ? 'X' : 'O'))
-    }
-  })
+    );
+  });
 
   return (
     <div className="game">
       <div className="game-board">
-        <Board squares={history.squares} onClick={selectSquare} />
-        <button
-          className="restart"
-          onClick={() => setHistory(Array(9).fill(null))}
-        >
+        <Board onClick={selectSquare} squares={currentSquares} />
+        <button className="restart" onClick={restart}>
           restart
         </button>
       </div>
+      <div className="game-info">
+        <div>{status}</div>
+        <ol>{moves}</ol>
+      </div>
     </div>
-  )
+  );
 }
-
 // eslint-disable-next-line no-unused-vars
 function calculateStatus(winner, squares, nextValue) {
   return winner
     ? `Winner: ${winner}`
     : squares.every(Boolean)
     ? `Scratch: Cat's game`
-    : `Next player: ${nextValue}`
+    : `Next player: ${nextValue}`;
 }
 
 // eslint-disable-next-line no-unused-vars
 function calculateNextValue(squares) {
-  console.log({squares})
-  const xSquaresCount = squares.filter(r => r === 'X').length
-  const oSquaresCount = squares.filter(r => r === 'O').length
-  return oSquaresCount === xSquaresCount ? 'X' : 'O'
+  console.log({ squares });
+  const xSquaresCount = squares.filter((r) => r === 'X').length;
+  const oSquaresCount = squares.filter((r) => r === 'O').length;
+  return oSquaresCount === xSquaresCount ? 'X' : 'O';
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -127,18 +148,18 @@ function calculateWinner(squares) {
     [2, 5, 8],
     [0, 4, 8],
     [2, 4, 6],
-  ]
+  ];
   for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i]
+    const [a, b, c] = lines[i];
     if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a]
+      return squares[a];
     }
   }
-  return null
+  return null;
 }
 
 function App() {
-  return <Game />
+  return <Game />;
 }
 
-export default App
+export default App;
