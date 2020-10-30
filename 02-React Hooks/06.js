@@ -14,36 +14,26 @@ import {
 } from '../pokemon';
 
 function PokemonInfo({ pokemonName }) {
-  const [pokemon, setPokemon] = React.useState(null);
-  const [status, setStatus] = React.useState('idle');
-  // 🐨 Have state for the pokemon (null)
-  // 🐨 use React.useEffect where the callback should be called whenever the
-  // pokemon name changes.
-  // 💰 DON'T FORGET THE DEPENDENCIES ARRAY!
-  // 💰 if the pokemonName is falsy (an empty string) then don't bother making the request (exit early).
-  // 🐨 before calling `fetchPokemon`, make sure to update the loading state
-  // 💰 Use the `fetchPokemon` function to fetch a pokemon by its name:
-  //   fetchPokemon('Pikachu').then(
-  //     pokemonData => { /* update all the state here */},
-  //   )
-  // 🐨 return the following things based on the `pokemon` state and `pokemonName` prop:
-  //   1. no pokemonName: 'Submit a pokemon'
-  //   2. pokemonName but no pokemon: <PokemonInfoFallback name={pokemonName} />
-  //   3. pokemon: <PokemonDataView pokemon={pokemon} />
+  const [state, setState] = React.useState({ status: 'idle', pokemon: null });
   React.useEffect(() => {
-    setStatus('fetching');
+    setState((prev) => ({ ...prev, status: 'pending' }));
     if (!pokemonName) return;
     fetchPokemon(pokemonName)
       .then((poki) => {
-        setPokemon(poki);
-        setStatus('success');
+        setState(() => {
+          return { status: 'resolved', pokemon: poki };
+        });
       })
       .catch((error) => {
-        setStatus('failure');
+        setState((previous) => ({ ...previous, status: 'failure' }));
         console.error(error);
       });
   }, [pokemonName]);
+
+  console.log({ state }, 'state');
+  const { status, pokemon } = state;
   if (!pokemonName) return <h1>Submit a Pokemon!</h1>;
+  if (status === 'pending') return <h1>loading..</h1>;
   return pokemon ? (
     <PokemonDataView pokemon={pokemon} />
   ) : (
@@ -52,7 +42,6 @@ function PokemonInfo({ pokemonName }) {
 }
 
 // error boundary component
-
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
