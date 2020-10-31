@@ -1,7 +1,7 @@
 // useEffect: HTTP requests
 // http://localhost:3000/isolated/exercise/06.js
 
-import React from 'react';
+import React from 'react'
 // 🐨 you'll want the following additional things from '../pokemon':
 // fetchPokemon: the function we call to get the pokemon info
 // PokemonInfoFallback: the thing we show while we're loading the pokemon info
@@ -11,67 +11,72 @@ import {
   fetchPokemon,
   PokemonInfoFallback,
   PokemonDataView,
-} from '../pokemon';
+} from '../pokemon'
 
-function PokemonInfo({ pokemonName }) {
-  const [state, setState] = React.useState({ status: 'idle', pokemon: null });
+function PokemonInfo({pokemonName}) {
+  const [state, setState] = React.useState({status: 'idle', pokemon: null})
   React.useEffect(() => {
-    setState((prev) => ({ ...prev, status: 'pending' }));
-    if (!pokemonName) return;
+    setState(prev => ({...prev, status: 'pending'}))
+    if (!pokemonName) return
     fetchPokemon(pokemonName)
-      .then((poki) => {
+      .then(poki => {
         setState(() => {
-          return { status: 'resolved', pokemon: poki };
-        });
+          return {status: 'resolved', pokemon: poki}
+        })
       })
-      .catch((error) => {
-        setState((previous) => ({ ...previous, status: 'failure' }));
-        console.error(error);
-      });
-  }, [pokemonName]);
+      .catch(error => {
+        setState(previous => ({
+          ...previous,
+          status: 'failure',
+          error: error.message,
+        }))
+      })
+  }, [pokemonName])
 
-  console.log({ state }, 'state');
-  const { status, pokemon } = state;
-  if (!pokemonName) return <h1>Submit a Pokemon!</h1>;
-  if (status === 'pending') return <h1>loading..</h1>;
+  const {status, pokemon, error} = state
+  if (!pokemonName) return <h1>Submit a Pokemon!</h1>
+
   return pokemon ? (
     <PokemonDataView pokemon={pokemon} />
   ) : (
-    <PokemonInfoFallback name={pokemonName} />
-  );
+    <div>
+      {error}
+      <PokemonInfoFallback name={pokemonName} />
+    </div>
+  )
 }
 
 // error boundary component
 class ErrorBoundary extends React.Component {
   constructor(props) {
-    super(props);
+    super(props)
     this.state = {
       hasError: false,
-    };
+    }
   }
   static getDerivedStateFromError(error) {
-    return { hasError: true };
+    return {hasError: true}
   }
   componentDidCatch(error, errorInfo) {
-    console.error({ error, errorInfo });
+    console.error({error, errorInfo})
   }
   render() {
     if (this.state.hasError) {
-      return <h1>Something went wrong</h1>;
+      return <h1>Something went wrong</h1>
     }
-    return this.props.children;
+    return this.props.children
   }
 }
 
 function App() {
-  const [pokemonName, setPokemonName] = React.useState('');
+  const [pokemonName, setPokemonName] = React.useState('')
 
   function handleSubmit(newPokemonName) {
-    setPokemonName(newPokemonName);
+    setPokemonName(newPokemonName)
   }
 
   return (
-    <ErrorBoundary>
+    <ErrorBoundary key={pokemonName}>
       <div className="pokemon-info-app">
         <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
         <hr />
@@ -80,7 +85,7 @@ function App() {
         </div>
       </div>
     </ErrorBoundary>
-  );
+  )
 }
 
-export default App;
+export default App
