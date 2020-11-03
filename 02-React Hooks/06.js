@@ -13,6 +13,32 @@ import {
   PokemonDataView,
 } from '../pokemon';
 
+// error boundary component
+class ErrorBoundary extends React.Component {
+  state = {
+    error: null,
+  };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    const { error } = this.state;
+    if (error) {
+      // fallback ui
+      return <this.props.fallbackComponent error={error} />;
+    }
+    return this.props.children;
+  }
+}
+function ErrorFallback({ error }) {
+  return (
+    <div role="alert">
+      There was an error:{' '}
+      <pre style={{ whiteSpace: 'normal' }}>{error.message}</pre>
+    </div>
+  );
+}
+
 function PokemonInfo({ pokemonName }) {
   // 🐨 Have state for the pokemon (null)
   // 🐨 use React.useEffect where the callback should be called whenever the
@@ -30,21 +56,33 @@ function PokemonInfo({ pokemonName }) {
   //   3. pokemon: <PokemonDataView pokemon={pokemon} />
 
   //! exercise start
-  const [state, setState] = React.useState({ status: 'idle', pokemon: null });
+  const [state, setState] = React.useState({
+    status: 'idle',
+    pokemon: null,
+    error: '',
+  });
   React.useEffect(() => {
     // this will run AFTER the browser paints
     if (!pokemonName) return;
-    setState((prev) => ({ ...prev, status: 'pending' }));
-    fetchPokemon(pokemonName).then((pokemon) => {
-      setState({ pokemon, status: 'successful' });
-    });
+    setState({ status: 'pending' });
+    fetchPokemon(pokemonName).then(
+      (pokemon) => {
+        setState({ pokemon, status: 'successful' });
+      },
+      (error) => {
+        setState({ status: 'rejected', error });
+      }
+    );
+
     return function cleanup() {
       setState({ status: 'idle', pokemon: null });
     };
     // only run if our pokemonName changes, this is the state we are synced with
   }, [pokemonName]);
-  if (!pokemonName) return <h1>Please submit a pokemon</h1>;
-  const { pokemon } = state;
+  const { pokemon, status, error } = state;
+  if (status === 'idle') return <h1>Please Select a Pokemon</h1>;
+  else if (status === 'rejected') throw error;
+
   return pokemon ? (
     <PokemonDataView pokemon={pokemon} />
   ) : (
@@ -65,7 +103,9 @@ function App() {
       <PokemonForm pokemonName={pokemonName} onSubmit={handleSubmit} />
       <hr />
       <div className="pokemon-info">
-        <PokemonInfo pokemonName={pokemonName} />
+        <ErrorBoundary fallbackComponent={ErrorFallback}>
+          <PokemonInfo pokemonName={pokemonName} />
+        </ErrorBoundary>
       </div>
     </div>
   );
