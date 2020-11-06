@@ -1,22 +1,25 @@
-// useReducer: simple Counter
-// http://localhost:3000/isolated/exercise/01.js
-
 import * as React from 'react';
 
-function countReducer(currentCount, newCount) {
-  return newCount;
+//* EC-2 simulate setState with an object
+const useStateReducer = (previousState, dispatchArg) => {
+  return dispatchArg;
+};
+function useState(initialValue) {
+  return React.useReducer(useStateReducer, initialValue);
 }
-
-function Counter({ initialCount = 0, step = 1 }) {
-  // 🐨 replace React.useState with React.useReducer.
-  // 💰 React.useReducer(countReducer, initialCount)
-  const [count, setCount] = React.useReducer(countReducer, initialCount);
-  const increment = () => setCount(count + step);
-  return <button onClick={increment}>{count}</button>;
+function Counter() {
+  const [count, setCount] = useState(0);
+  const increment = () => setCount(count + 1);
+  return (
+    <div>
+      <p>the current count is {count}</p>
+      <button onClick={increment}>click me</button>
+    </div>
+  );
 }
 
 function App() {
-  return <Counter step={5} />;
+  return <Counter />;
 }
 
 export default App;
