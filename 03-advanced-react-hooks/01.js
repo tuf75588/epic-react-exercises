@@ -1,42 +1,38 @@
-import * as React from 'react';
+import * as React from 'react'
 
 //* EC-2 simulate setState with an object
 const useStateReducer = (state, action) => {
-  switch (action.type) {
-    case 'INCREMENT': {
-      return {
-        ...state,
-        count: action.count,
-      };
-    }
-    default: {
-      return state;
-    }
+  return {
+    ...state,
+    ...(typeof action === 'function' ? action(state) : action),
   }
-};
+}
 function useState(initialValue) {
   //! third argument useReducer accepts is a lazy initializer function
 
-  return React.useReducer(useStateReducer, initialValue, useStateInitializer);
+  return React.useReducer(useStateReducer, initialValue, useStateInitializer)
 }
 
 function useStateInitializer(initialArg) {
-  return typeof initialArg === 'function' ? initialArg() : initialArg;
+  return typeof initialArg === 'function' ? initialArg() : initialArg
 }
-function Counter({ step = 1 }) {
-  const [state, setState] = useState({ count: 4 });
+function Counter({step = 1}) {
+  const [state, setState] = useState({count: 4})
   const increment = () =>
-    setState({ type: 'INCREMENT', count: state.count + step });
+    setState(currentState => ({
+      type: 'INCREMENT',
+      count: currentState.count + step,
+    }))
   return (
     <div>
       <p>the current count is {state.count}</p>
       <button onClick={increment}>click me</button>
     </div>
-  );
+  )
 }
 
 function App() {
-  return <Counter step={3} />;
+  return <Counter step={4} />
 }
 
-export default App;
+export default App
