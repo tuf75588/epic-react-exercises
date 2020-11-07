@@ -4,7 +4,10 @@ import * as React from 'react';
 const useStateReducer = (state, action) => {
   switch (action.type) {
     case 'INCREMENT': {
-      return state + action.count;
+      return {
+        ...state,
+        count: action.count,
+      };
     }
     default: {
       return state;
@@ -20,19 +23,20 @@ function useState(initialValue) {
 function useStateInitializer(initialArg) {
   return typeof initialArg === 'function' ? initialArg() : initialArg;
 }
-function Counter() {
-  const [count, setCount] = useState(() => 15);
-  const increment = () => setCount((c) => c + 15);
+function Counter({ step = 1 }) {
+  const [state, setState] = useState({ count: 4 });
+  const increment = () =>
+    setState({ type: 'INCREMENT', count: state.count + step });
   return (
     <div>
-      <p>the current count is {count}</p>
+      <p>the current count is {state.count}</p>
       <button onClick={increment}>click me</button>
     </div>
   );
 }
 
 function App() {
-  return <Counter />;
+  return <Counter step={3} />;
 }
 
 export default App;
