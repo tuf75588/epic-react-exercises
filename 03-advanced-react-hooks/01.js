@@ -1,11 +1,15 @@
-// useReducer: simple Counter
-// http://localhost:3000/isolated/exercise/01.js
-
 import * as React from 'react';
 
 //* EC-2 simulate setState with an object
-const useStateReducer = (previousState, newState) => {
-  return typeof newState === 'function' ? newState(previousState) : newState;
+const useStateReducer = (state, action) => {
+  switch (action.type) {
+    case 'INCREMENT': {
+      return state + action.count;
+    }
+    default: {
+      return state;
+    }
+  }
 };
 function useState(initialValue) {
   //! third argument useReducer accepts is a lazy initializer function
