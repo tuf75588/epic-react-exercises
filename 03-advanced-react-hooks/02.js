@@ -10,19 +10,15 @@ import {
   PokemonErrorBoundary,
 } from '../pokemon'
 
-// 🐨 this is going to be our generic asyncReducer
 function pokemonInfoReducer(state, action) {
   switch (action.type) {
     case 'pending': {
-      // 🐨 replace "pokemon" with "data"
       return {status: 'pending', data: null, error: null}
     }
     case 'resolved': {
-      // 🐨 replace "pokemon" with "data" (in the action too!)
       return {status: 'resolved', data: action.pokemon, error: null}
     }
     case 'rejected': {
-      // 🐨 replace "pokemon" with "data"
       return {status: 'rejected', data: null, error: action.error}
     }
     default: {
@@ -43,6 +39,7 @@ function useAsync(asyncCallback, status, name) {
   React.useEffect(() => {
     const promise = asyncCallback()
     if (!promise) return
+    dispatch({type: 'pending'})
     promise.then(
       pokemon => {
         console.log(pokemon)
@@ -66,22 +63,6 @@ function PokemonInfo({pokemonName}) {
     [pokemonName],
   )
   console.log(state)
-  // 🐨 move both the useReducer and useEffect hooks to a custom hook called useAsync
-  // here's how you use it:
-  // const state = useAsync(
-  //   () => {
-  //     if (!pokemonName) {
-  //       return
-  //     }
-  //     return fetchPokemon(pokemonName)
-  //   },
-  //   {status: pokemonName ? 'pending' : 'idle'},
-  //   [pokemonName],
-  // )
-  // 🐨 so your job is to create a useAsync function that makes this work.
-
-  // 🐨 this will change from "pokemon" to "dat
-
   const {data, status, error} = state
   if (status === 'idle' || !pokemonName) {
     return 'Submit a pokemon'
