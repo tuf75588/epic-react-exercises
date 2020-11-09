@@ -15,15 +15,15 @@ function pokemonInfoReducer(state, action) {
   switch (action.type) {
     case 'pending': {
       // 🐨 replace "pokemon" with "data"
-      return {status: 'pending', pokemon: null, error: null}
+      return {status: 'pending', data: null, error: null}
     }
     case 'resolved': {
       // 🐨 replace "pokemon" with "data" (in the action too!)
-      return {status: 'resolved', pokemon: action.pokemon, error: null}
+      return {status: 'resolved', data: action.pokemon, error: null}
     }
     case 'rejected': {
       // 🐨 replace "pokemon" with "data"
-      return {status: 'rejected', pokemon: null, error: action.error}
+      return {status: 'rejected', data: null, error: action.error}
     }
     default: {
       throw new Error(`Unhandled action type: ${action.type}`)
@@ -31,25 +31,40 @@ function pokemonInfoReducer(state, action) {
   }
 }
 
-function useAsync(asyncCallback, status, deps) {
+function useAsync(asyncCallback, status, name) {
   const [state, dispatch] = React.useReducer(pokemonInfoReducer, {
     ...status,
     data: null,
     error: null,
   })
   const pokemonData = React.useCallback(() => {
-    asyncCallback()
-  }, [state.data])
+    asyncCallback(name)
+  }, name)
   React.useEffect(() => {
-    pokemonData()
+    const promise = asyncCallback()
+    if (!promise) return
+    promise.then(
+      pokemon => {
+        console.log(pokemon)
+        dispatch({type: 'resolved', pokemon})
+      },
+      error => {
+        dispatch({type: 'rejected', error})
+      },
+    )
   }, [pokemonData])
+  return state
 }
 
 function PokemonInfo({pokemonName}) {
-  const state = useAsync(() => {
-    if (!pokemonName) return
-    return fetchPokemon(pokemonName)
-  })
+  const state = useAsync(
+    () => {
+      if (!pokemonName) return
+      return fetchPokemon(pokemonName)
+    },
+    {status: pokemonName ? 'pending' : 'idle'},
+    [pokemonName],
+  )
   console.log(state)
   // 🐨 move both the useReducer and useEffect hooks to a custom hook called useAsync
   // here's how you use it:
@@ -67,18 +82,18 @@ function PokemonInfo({pokemonName}) {
 
   // 🐨 this will change from "pokemon" to "dat
 
-  // if (status === 'idle' || !pokemonName) {
-  //   return 'Submit a pokemon'
-  // } else if (status === 'pending') {
-  //   return <PokemonInfoFallback name={pokemonName} />
-  // } else if (status === 'rejected') {
-  //   throw error
-  // } else if (status === 'resolved') {
-  //   return <PokemonDataView pokemon={pokemon} />
-  // }
+  const {data, status, error} = state
+  if (status === 'idle' || !pokemonName) {
+    return 'Submit a pokemon'
+  } else if (status === 'pending') {
+    return <PokemonInfoFallback name={pokemonName} />
+  } else if (status === 'rejected') {
+    throw error
+  } else if (status === 'resolved') {
+    return <PokemonDataView pokemon={data} />
+  }
 
-  // throw new Error('This should be impossible')
-  return <div>placeholder</div>
+  throw new Error('This should be impossible')
 }
 
 function App() {
